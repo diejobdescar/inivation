@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>零食博物馆 · 展览盛典邀请函</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0a0a;
+    color: #d4af37;
+    font-family: 'Noto Serif SC', 'STSong', 'SimSun', serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    /* 防止 iOS 触摸高亮 */
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* ── 金色粒子背景 ── */
+  #canvas-bg {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 0;
+    touch-action: none;
+  }
+
+  /* ── 页面容器 ── */
+  .page {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    transition: opacity 0.8s ease, transform 0.8s ease;
+  }
+
+  .page.hidden {
+    opacity: 0;
+    transform: translateY(20px);
+    pointer-events: none;
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    z-index: 0;
+  }
+
+  /* ── 装饰线框 ── */
+  .frame {
+    position: relative;
+    background: linear-gradient(145deg, #111008 0%, #0d0d00 50%, #0a0a08 100%);
+    border: 1px solid #8b6914;
+    max-width: 680px;
+    width: 100%;
+    padding: 60px 56px;
+  }
+
+  .frame::before,
+  .frame::after {
+    content: '';
+    position: absolute;
+    border: 1px solid #c9982244;
+  }
+  .frame::before {
+    top: 10px; left: 10px; right: 10px; bottom: 10px;
+  }
+  .frame::after {
+    top: 16px; left: 16px; right: 16px; bottom: 16px;
+    border-color: #c9982218;
+  }
+
+  /* ── 四角花饰 ── */
+  .corner {
+    position: absolute;
+    width: 36px; height: 36px;
+  }
+  .corner svg { width: 100%; height: 100%; }
+  .corner-tl { top: 4px; left: 4px; }
+  .corner-tr { top: 4px; right: 4px; transform: scaleX(-1); }
+  .corner-bl { bottom: 4px; left: 4px; transform: scaleY(-1); }
+  .corner-br { bottom: 4px; right: 4px; transform: scale(-1,-1); }
+
+  /* ── 顶部标识 ── */
+  .museum-label {
+    text-align: center;
+    letter-spacing: 0.35em;
+    font-size: 11px;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+    font-weight: 300;
+    color: #8b6914;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .ornament-line {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 12px 0;
+  }
+  .ornament-line::before,
+  .ornament-line::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(to right, transparent, #8b6914, transparent);
+  }
+  .ornament-line span {
+    color: #d4af37;
+    font-size: 16px;
+  }
+
+  /* ── 主标题 ── */
+  .main-title {
+    text-align: center;
+    font-size: 28px;
+    font-weight: 600;
+    color: #d4af37;
+    letter-spacing: 0.2em;
+    line-height: 1.4;
+    margin: 10px 0;
+    text-shadow: 0 0 40px #d4af3744;
+  }
+
+  .sub-title {
+    text-align: center;
+    font-size: 13px;
+    color: #8b6914;
+    letter-spacing: 0.5em;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+    font-weight: 300;
+    margin-top: 6px;
+  }
+
+  /* ── 第一层：输入团队名称 ── */
+  .page1-desc {
+    text-align: center;
+    color: #c9a84c;
+    font-size: 14px;
+    line-height: 2;
+    margin: 28px 0 20px;
+    letter-spacing: 0.08em;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+    font-weight: 300;
+  }
+
+  .input-wrap {
+    position: relative;
+    margin: 20px 0;
+  }
+
+  .input-label {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    color: #8b6914;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+    font-weight: 300;
+    text-align: center;
+    margin-bottom: 12px;
+  }
+
+  #team-input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid #8b6914;
+    color: #d4af37;
+    font-size: 16px;
+    font-family: 'Noto Serif SC', 'STSong', serif;
+    text-align: center;
+    padding: 10px 0;
+    outline: none;
+    letter-spacing: 0.15em;
+    transition: border-color 0.3s;
+    pointer-events: auto;
+    cursor: text;
+    -webkit-user-select: text;
+    user-select: text;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #team-input::placeholder {
+    color: #4a3a10;
+    font-size: 14px;
+    letter-spacing: 0.2em;
+  }
+  #team-input:focus {
+    border-bottom-color: #d4af37;
+  }
+
+  .enter-btn {
+    display: block;
+    width: 100%;
+    margin-top: 36px;
+    padding: 14px;
+    background: transparent;
+    border: 1px solid #8b6914;
+    color: #d4af37;
+    font-size: 13px;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+    font-weight: 300;
+    letter-spacing: 0.5em;
+    cursor: pointer;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+    pointer-events: auto;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .enter-btn::before {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, #d4af3722, transparent);
+    transition: left 0.5s;
+  }
+  .enter-btn:hover {
+    background: #d4af3710;
+    border-color: #d4af37;
+    letter-spacing: 0.6em;
+  }
+  .enter-btn:hover::before {
+    left: 100%;
+  }
+
+  /* ── 第二层：邀请函正文 ── */
+  .invitation-body {
+    position: relative;
+  }
+
+  .recipient-line {
+    text-align: center;
+    margin: 24px 0 6px;
+    font-size: 13px;
+    color: #8b6914;
+    letter-spacing: 0.3em;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+    font-weight: 300;
+  }
+
+  .recipient-name {
+    text-align: center;
+    font-size: 24px;
+    color: #d4af37;
+    letter-spacing: 0.3em;
+    margin-bottom: 4px;
+    font-weight: 600;
+  }
+
+  .salute {
+    text-align: center;
+    font-size: 13px;
+    color: #8b6914;
+    letter-spacing: 0.2em;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+    font-weight: 300;
+    margin-bottom: 20px;
+  }
+
+  .divider-fancy {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin: 20px 0;
+  }
+  .divider-fancy .line-seg {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(to right, transparent, #8b691488, transparent);
+  }
+  .divider-fancy .diamond {
+    width: 6px; height: 6px;
+    background: #d4af37;
+    transform: rotate(45deg);
+    flex-shrink: 0;
+  }
+  .divider-fancy .diamond-sm {
+    width: 4px; height: 4px;
+    background: #8b6914;
+    transform: rotate(45deg);
+    flex-shrink: 0;
+  }
+
+  .body-text {
+    font-size: 14px;
+    line-height: 2.2;
+    color: #c9a84c;
+    text-align: justify;
+    letter-spacing: 0.05em;
+    margin: 16px 0;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+    font-weight: 300;
+  }
+
+  .body-text .highlight {
+    color: #d4af37;
+    font-weight: 400;
+  }
+
+  /* ── 信息卡 ── */
+  .info-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    margin: 28px 0;
+  }
+
+  .info-card {
+    border: 1px solid #8b691466;
+    padding: 16px 12px;
+    text-align: center;
+    position: relative;
+  }
+  .info-card::before {
+    content: '';
+    position: absolute;
+    top: 3px; left: 3px; right: 3px; bottom: 3px;
+    border: 1px solid #8b691422;
+  }
+  .info-card-icon {
+    font-size: 18px;
+    display: block;
+    margin-bottom: 8px;
+  }
+  .info-card-label {
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    color: #8b6914;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+    font-weight: 300;
+    display: block;
+    margin-bottom: 6px;
+  }
+  .info-card-value {
+    font-size: 13px;
+    color: #d4af37;
+    letter-spacing: 0.1em;
+    display: block;
+    font-weight: 400;
+  }
+
+  /* SVG 图标替代 */
+  .icon-svg {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 8px;
+  }
+
+  .closing-text {
+    text-align: center;
+    font-size: 13px;
+    color: #c9a84c;
+    line-height: 2;
+    margin: 24px 0 16px;
+    letter-spacing: 0.08em;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+    font-weight: 300;
+  }
+
+  .seal-area {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 20px;
+    margin-top: 28px;
+    padding-top: 20px;
+    border-top: 1px solid #8b691433;
+  }
+
+  .seal-text {
+    text-align: right;
+  }
+
+  .seal-text .org {
+    font-size: 14px;
+    color: #d4af37;
+    letter-spacing: 0.15em;
+    display: block;
+  }
+  .seal-text .date-issued {
+    font-size: 11px;
+    color: #8b6914;
+    letter-spacing: 0.2em;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+    font-weight: 300;
+    display: block;
+    margin-top: 4px;
+  }
+
+  .seal-circle {
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    border: 1px solid #8b6914;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    position: relative;
+  }
+  .seal-circle::before {
+    content: '';
+    position: absolute;
+    inset: 4px;
+    border-radius: 50%;
+    border: 1px solid #8b691444;
+  }
+  .seal-circle span {
+    font-size: 9px;
+    color: #d4af37;
+    letter-spacing: 0.05em;
+    text-align: center;
+    line-height: 1.4;
+    position: relative;
+  }
+
+  .back-btn {
+    display: block;
+    margin: 28px auto 0;
+    padding: 8px 24px;
+    background: transparent;
+    border: 1px solid #8b691466;
+    color: #8b6914;
+    font-size: 11px;
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+    font-weight: 300;
+    letter-spacing: 0.4em;
+    cursor: pointer;
+    transition: all 0.3s;
+    pointer-events: auto;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .back-btn:hover {
+    color: #d4af37;
+    border-color: #d4af37;
+  }
+
+  /* ── 响应式 ── */
+  @media (max-width: 480px) {
+    .frame { padding: 48px 28px; }
+    .main-title { font-size: 22px; }
+    .info-cards { grid-template-columns: 1fr; gap: 10px; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="canvas-bg"></canvas>
+
+<!-- 第一层：输入团队名称 -->
+<div class="page" id="page1">
+  <div class="frame">
+    <!-- 四角装饰 -->
+    <div class="corner corner-tl"><svg viewBox="0 0 36 36" fill="none">
+      <path d="M2 18 L2 2 L18 2" stroke="#8b6914" stroke-width="0.8"/>
+      <path d="M6 18 L6 6 L18 6" stroke="#8b691466" stroke-width="0.5"/>
+      <circle cx="2" cy="2" r="1.5" fill="#d4af37"/>
+    </svg></div>
+    <div class="corner corner-tr"><svg viewBox="0 0 36 36" fill="none">
+      <path d="M2 18 L2 2 L18 2" stroke="#8b6914" stroke-width="0.8"/>
+      <path d="M6 18 L6 6 L18 6" stroke="#8b691466" stroke-width="0.5"/>
+      <circle cx="2" cy="2" r="1.5" fill="#d4af37"/>
+    </svg></div>
+    <div class="corner corner-bl"><svg viewBox="0 0 36 36" fill="none">
+      <path d="M2 18 L2 2 L18 2" stroke="#8b6914" stroke-width="0.8"/>
+      <path d="M6 18 L6 6 L18 6" stroke="#8b691466" stroke-width="0.5"/>
+      <circle cx="2" cy="2" r="1.5" fill="#d4af37"/>
+    </svg></div>
+    <div class="corner corner-br"><svg viewBox="0 0 36 36" fill="none">
+      <path d="M2 18 L2 2 L18 2" stroke="#8b6914" stroke-width="0.8"/>
+      <path d="M6 18 L6 6 L18 6" stroke="#8b691466" stroke-width="0.5"/>
+      <circle cx="2" cy="2" r="1.5" fill="#d4af37"/>
+    </svg></div>
+
+    <p class="museum-label">Snack Museum Exhibition Gala 2026</p>
+
+    <div class="ornament-line">
+      <span>&#9670;</span>
+    </div>
+
+    <h1 class="main-title">零食博物馆</h1>
+    <p class="sub-title">SNACK MUSEUM GRAND EXHIBITION</p>
+
+    <div class="ornament-line" style="margin-top:16px;">
+      <span>&#9671;</span>
+    </div>
+
+    <p class="page1-desc">
+      谨以此函，恭候您的莅临<br>
+      敬请告知贵团队名称，以便为您呈上专属邀请
+    </p>
+
+    <div class="input-wrap">
+      <span class="input-label">TEAM NAME 团队名称</span>
+      <input type="text" id="team-input" placeholder="请输入您的团队名称" maxlength="20" autocomplete="off">
+    </div>
+
+    <button class="enter-btn" id="enter-btn">
+      &#10022; 查阅邀请函 &#10022;
+    </button>
+
+    <div style="margin-top:28px;">
+      <div class="ornament-line"><span style="font-size:12px;color:#4a3a10;">&#9670;</span></div>
+      <p style="text-align:center;font-size:10px;color:#4a3a10;letter-spacing:0.3em;font-family:'Noto Sans SC','Microsoft YaHei',sans-serif;font-weight:300;margin-top:8px;">2026 EXHIBITION OF FINE DELICACIES</p>
+    </div>
+  </div>
+</div>
+
+<!-- 第二层：邀请函正文 -->
+<div class="page hidden" id="page2">
+  <div class="frame">
+    <!-- 四角装饰 -->
+    <div class="corner corner-tl"><svg viewBox="0 0 36 36" fill="none">
+      <path d="M2 18 L2 2 L18 2" stroke="#8b6914" stroke-width="0.8"/>
+      <path d="M6 18 L6 6 L18 6" stroke="#8b691466" stroke-width="0.5"/>
+      <circle cx="2" cy="2" r="1.5" fill="#d4af37"/>
+    </svg></div>
+    <div class="corner corner-tr"><svg viewBox="0 0 36 36" fill="none">
+      <path d="M2 18 L2 2 L18 2" stroke="#8b6914" stroke-width="0.8"/>
+      <path d="M6 18 L6 6 L18 6" stroke="#8b691466" stroke-width="0.5"/>
+      <circle cx="2" cy="2" r="1.5" fill="#d4af37"/>
+    </svg></div>
+    <div class="corner corner-bl"><svg viewBox="0 0 36 36" fill="none">
+      <path d="M2 18 L2 2 L18 2" stroke="#8b6914" stroke-width="0.8"/>
+      <path d="M6 18 L6 6 L18 6" stroke="#8b691466" stroke-width="0.5"/>
+      <circle cx="2" cy="2" r="1.5" fill="#d4af37"/>
+    </svg></div>
+    <div class="corner corner-br"><svg viewBox="0 0 36 36" fill="none">
+      <path d="M2 18 L2 2 L18 2" stroke="#8b6914" stroke-width="0.8"/>
+      <path d="M6 18 L6 6 L18 6" stroke="#8b691466" stroke-width="0.5"/>
+      <circle cx="2" cy="2" r="1.5" fill="#d4af37"/>
+    </svg></div>
+
+    <p class="museum-label">Snack Museum Exhibition Gala 2026</p>
+
+    <div class="ornament-line"><span>&#9670;</span></div>
+
+    <h1 class="main-title">展览盛典<br>邀请函</h1>
+    <p class="sub-title">LETTER OF INVITATION</p>
+
+    <div class="ornament-line" style="margin-top:14px;"><span>&#9671;</span></div>
+
+    <div class="invitation-body">
+      <p class="recipient-line">恭候</p>
+      <p class="recipient-name" id="team-display">--</p>
+      <p class="salute">全体成员 惠存</p>
+
+      <div class="divider-fancy">
+        <div class="line-seg"></div>
+        <div class="diamond-sm"></div>
+        <div class="diamond"></div>
+        <div class="diamond-sm"></div>
+        <div class="line-seg"></div>
+      </div>
+
+      <p class="body-text">
+        值此良辰，<span class="highlight">零食博物馆</span>谨以最诚挚之邀，恭请贵团队莅临
+        <span class="highlight">「精馐博览 展览盛典」</span>。
+      </p>
+
+      <p class="body-text">
+        本次盛典汇聚馆藏<span class="highlight">精美展品</span>，以展陈之礼，呈现零食世界的极致风味与匠心工艺。
+        自各地遴选而来的珍品佳肴，将一一陈列于展台之上，供诸位嘉宾品鉴观赏，领略舌尖上的艺术之美。
+      </p>
+
+      <p class="body-text">
+        盛典期间，部分<span class="highlight">限定展品</span>将作为礼品分发予在场嘉宾，以馈贵团队惠顾之情。
+        愿诸位于此间共享美味，留下难忘之雅趣回忆。
+      </p>
+
+      <div class="divider-fancy" style="margin:20px 0;">
+        <div class="line-seg"></div>
+        <div class="diamond-sm"></div>
+        <div class="diamond"></div>
+        <div class="diamond-sm"></div>
+        <div class="line-seg"></div>
+      </div>
+
+      <!-- 活动信息卡 -->
+      <div class="info-cards">
+        <div class="info-card">
+          <div class="icon-svg">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+              <rect x="2" y="4" width="18" height="16" rx="1" stroke="#d4af37" stroke-width="0.8"/>
+              <path d="M2 9h18" stroke="#8b6914" stroke-width="0.5"/>
+              <path d="M7 2v4M15 2v4" stroke="#d4af37" stroke-width="0.8" stroke-linecap="round"/>
+              <rect x="6" y="12" width="4" height="3" rx="0.5" fill="#d4af3744"/>
+              <rect x="12" y="12" width="4" height="3" rx="0.5" fill="#d4af3744"/>
+            </svg>
+          </div>
+          <span class="info-card-label">DATE 日期</span>
+          <span class="info-card-value">6月21日</span>
+        </div>
+        <div class="info-card">
+          <div class="icon-svg">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+              <circle cx="11" cy="11" r="8" stroke="#d4af37" stroke-width="0.8"/>
+              <path d="M11 6v5l3.5 2" stroke="#d4af37" stroke-width="0.8" stroke-linecap="round"/>
+              <circle cx="11" cy="11" r="1" fill="#d4af37"/>
+            </svg>
+          </div>
+          <span class="info-card-label">TIME 时间</span>
+          <span class="info-card-value">14:00</span>
+        </div>
+        <div class="info-card">
+          <div class="icon-svg">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+              <path d="M11 2C8.24 2 6 4.24 6 7c0 4 5 12 5 12s5-8 5-12c0-2.76-2.24-5-5-5z" stroke="#d4af37" stroke-width="0.8" fill="none"/>
+              <circle cx="11" cy="7" r="2" stroke="#d4af37" stroke-width="0.7"/>
+            </svg>
+          </div>
+          <span class="info-card-label">VENUE 地点</span>
+          <span class="info-card-value">博4A-102</span>
+        </div>
+      </div>
+
+      <p class="closing-text">
+        届时敬候大驾，共赴这场舌尖与视觉的双重盛宴<br>
+        烦请准时莅临，以免错过精彩展品分发环节
+      </p>
+
+      <div class="divider-fancy">
+        <div class="line-seg"></div>
+        <div class="diamond-sm"></div>
+        <div class="diamond"></div>
+        <div class="diamond-sm"></div>
+        <div class="line-seg"></div>
+      </div>
+
+      <div class="seal-area">
+        <div class="seal-text">
+          <span class="org">零食博物馆</span>
+          <span class="date-issued">二零二六年六月 谨启</span>
+        </div>
+        <div class="seal-circle">
+          <span>零食<br>博物馆</span>
+        </div>
+      </div>
+
+      <button class="back-btn" id="back-btn">返回修改</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  /* ── 粒子背景 ── */
+  var canvas = document.getElementById('canvas-bg');
+  var ctx = canvas.getContext('2d');
+  var W = 0, H = 0;
+  var particles = [];
+
+  function resizeCanvas() {
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+
+  function createParticle() {
+    return {
+      x: Math.random() * (W || 800),
+      y: Math.random() * (H || 600),
+      size: Math.random() * 1.5 + 0.3,
+      speedY: -(Math.random() * 0.4 + 0.1),
+      speedX: (Math.random() - 0.5) * 0.2,
+      opacity: Math.random() * 0.6 + 0.1,
+      life: 0,
+      maxLife: Math.random() * 300 + 200
+    };
+  }
+
+  function initParticles() {
+    particles = [];
+    for (var i = 0; i < 80; i++) {
+      var p = createParticle();
+      p.life = Math.floor(Math.random() * p.maxLife);
+      particles.push(p);
+    }
+  }
+  initParticles();
+
+  function animateParticles() {
+    if (W === 0 || H === 0) {
+      resizeCanvas();
+    }
+    ctx.clearRect(0, 0, W, H);
+    for (var i = 0; i < particles.length; i++) {
+      var p = particles[i];
+      p.life++;
+      if (p.life > p.maxLife) {
+        particles[i] = createParticle();
+        continue;
+      }
+      var fade = Math.sin(Math.PI * p.life / p.maxLife);
+      var alpha = (p.opacity * fade).toFixed(3);
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(212,175,55,' + alpha + ')';
+      ctx.fill();
+      p.x += p.speedX;
+      p.y += p.speedY;
+    }
+    window.requestAnimationFrame(animateParticles);
+  }
+  animateParticles();
+
+  /* ── 页面切换逻辑 ── */
+  var page1 = document.getElementById('page1');
+  var page2 = document.getElementById('page2');
+  var teamDisplay = document.getElementById('team-display');
+  var teamInput = document.getElementById('team-input');
+
+  /**
+   * 从输入页切换到邀请函页
+   * @param {string} name - 团队名称
+   */
+  function showInvitation(name) {
+    teamDisplay.textContent = name;
+
+    /* 清除目标页（page2）可能残留的 inline 样式 */
+    page2.style.opacity = '';
+    page2.style.transform = '';
+
+    /* 确保 page2 在最上层 */
+    page2.style.zIndex = '2';
+    page1.style.zIndex = '0';
+
+    /* 开始过渡：淡出 page1 */
+    page1.style.opacity = '0';
+    page1.style.transform = 'translateY(-20px)';
+
+    setTimeout(function() {
+      page1.classList.add('hidden');
+      page2.classList.remove('hidden');
+      /* 强制 reflow，确保浏览器识别过渡起点 */
+      void page2.offsetWidth;
+      /* 开始过渡：淡入 page2 */
+      page2.style.opacity = '1';
+      page2.style.transform = 'translateY(0)';
+    }, 600);
+  }
+
+  /**
+   * 从邀请函页返回输入页
+   */
+  function showInputPage() {
+    /* 清除目标页（page1）可能残留的 inline 样式 */
+    page1.style.opacity = '';
+    page1.style.transform = '';
+
+    page1.style.zIndex = '2';
+    page2.style.zIndex = '0';
+
+    /* 开始过渡：淡出 page2 */
+    page2.style.opacity = '0';
+    page2.style.transform = 'translateY(20px)';
+
+    setTimeout(function() {
+      page2.classList.add('hidden');
+      page1.classList.remove('hidden');
+      void page1.offsetWidth;
+      /* 开始过渡：淡入 page1 */
+      page1.style.opacity = '1';
+      page1.style.transform = 'translateY(0)';
+      /* 重新聚焦输入框 */
+      if (teamInput) {
+        setTimeout(function() { teamInput.focus(); }, 300);
+      }
+    }, 600);
+  }
+
+  /**
+   * 校验输入并切换页面
+   */
+  function tryEnter() {
+    var name = teamInput.value.trim();
+    if (!name) {
+      teamInput.focus();
+      teamInput.style.borderBottomColor = '#c0392b';
+      setTimeout(function() {
+        teamInput.style.borderBottomColor = '#8b6914';
+      }, 1500);
+      return;
+    }
+    showInvitation(name);
+  }
+
+  /* ── 按钮绑定（addEventListener，不依赖全局函数） ── */
+  var enterBtn = document.getElementById('enter-btn');
+  if (enterBtn) {
+    enterBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      tryEnter();
+    });
+  }
+
+  var backBtn = document.getElementById('back-btn');
+  if (backBtn) {
+    backBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      showInputPage();
+    });
+  }
+
+  /* ── 回车键确认 ── */
+  if (teamInput) {
+    teamInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        tryEnter();
+      }
+    });
+    /* 页面加载后自动聚焦输入框 */
+    setTimeout(function() { teamInput.focus(); }, 500);
+  }
+
+  /* ── 支持 URL 参数直接打开邀请函 ── */
+  /* 用法：invitation.html?team=团队名称 */
+  var params = new URLSearchParams(window.location.search);
+  var teamFromUrl = params.get('team');
+  if (teamFromUrl) {
+    showInvitation(teamFromUrl);
+  }
+})();
+</script>
+</body>
+</html>
